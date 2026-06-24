@@ -1,3 +1,5 @@
+![SCL Banner](assets/banner.png)
+
 # SCL - Supreme Container Lock
 
 A lightweight Skript-based container protection system. Players lock their chests, barrels, furnaces, blast furnaces and smokers in a single click and manage everything from a clean GUI - no commands to memorise. Ownership is stored directly on the block using persistent data, so locks survive restarts, chunk reloads and server migrations without any external database.
