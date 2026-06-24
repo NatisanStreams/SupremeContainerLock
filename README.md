@@ -1,4 +1,4 @@
-![SCL Banner](assets/banner.png)
+![SCL Banner](assets/cover.png)
 
 # SCL - Supreme Container Lock
 
