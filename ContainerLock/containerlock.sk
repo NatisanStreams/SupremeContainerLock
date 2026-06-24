@@ -1,0 +1,294 @@
+options:
+    prefix: <##5C5048>[<##E0A526>SCL<##5C5048>]
+    error: <##E0574B>
+    success: <##7BC86C>
+    text: <##C9C2BA>
+
+
+on load:
+    add chest to {-blocks::*}
+    add barrel to {-blocks::*}
+    add furnace to {-blocks::*}
+    add blast furnace to {-blocks::*}
+    add smoker to {-blocks::*}
+
+
+    set {-lock} to barrier
+    set displayname of {-lock} to formatted "<##7BC86C>Lock your chest"
+    set line 1 of lore of {-lock} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-lock} to formatted "{@text}Lock your chest, allowing"
+    set line 4 of lore of {-lock} to formatted "{@text}only you and trusted players"
+    set line 5 of lore of {-lock} to formatted "{@text}to access it!"
+    set item flags of {-lock} to item flags
+
+    set {-unlock} to trial key
+    set displayname of {-unlock} to formatted "<##7BC86C>Unlock your chest"
+    set line 1 of lore of {-unlock} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-unlock} to formatted "{@text}Unlock your chest, making it"
+    set line 4 of lore of {-unlock} to formatted "{@text}accessible to everyone!"
+
+    set {-addtrust} to oak sign
+    set displayname of {-addtrust} to formatted "{@success}Trust a player"
+    set line 1 of lore of {-addtrust} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-addtrust} to formatted "{@text}Trust a player to be allowed"
+    set line 4 of lore of {-addtrust} to formatted "{@text}to access your container!"
+
+    set {-removetrust} to crimson sign
+    set displayname of {-removetrust} to formatted "{@success}Untrust a player"
+    set line 1 of lore of {-removetrust} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-removetrust} to formatted "{@text}Untrust a player, removing"
+    set line 4 of lore of {-removetrust} to formatted "{@text}their container access permission!"
+
+    set {-listtrusted} to writable book
+    set displayname of {-listtrusted} to formatted "{@success}List all trusted players"
+    set line 1 of lore of {-listtrusted} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-listtrusted} to formatted "{@text}List all the players that are"
+    set line 4 of lore of {-listtrusted} to formatted "{@text}trusted on your container"
+
+    set {-cleartrusted} to tnt
+    set displayname of {-cleartrusted} to formatted "{@success}Clear trusted list"
+    set line 1 of lore of {-cleartrusted} to formatted "<dark_gray>Information"
+    set line 3 of lore of {-cleartrusted} to formatted "{@text}Clear your entire trusted"
+    set line 4 of lore of {-cleartrusted} to formatted "{@text}players list"
+
+function manage(p: player, block: block) :: inventory:
+    set {_player} to name of {_p}
+    create a gui with virtual chest inventory with 1 row named formatted "<black>Manage your container":
+        run on gui open:
+            play sound "block.chest.open" with volume 0.75 to {_p}
+
+        run on gui close:
+            play sound "block.chest.close" with volume 0.75 to {_p}
+
+        make gui slot 0 to {-lock}:
+            if data value "scl:owner" of {_block} is not set:
+                set data value "scl:owner" of {_block} to "%{_player}%"
+                send "{@prefix} {@success}You have locked your container" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is "%{_player}%":
+                send "{@prefix} {@error}This container is already locked and owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+
+
+        make gui slot 1 to {-unlock}:
+            if data value "scl:owner" of {_block} is not set:
+                send "{@prefix} {@error}This container is not locked or owned by anyone" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            else:
+                clear data value "scl:owner" of {_block}
+                clear list data value "scl:trusted" of {_block}
+                send "{@prefix} {@success}This container has been unlocked, allowing access to anyone" to {_p}
+                close {_p}'s inventory
+                stop
+        
+        make gui slot 2 to {-addtrust}:
+            if data value "scl:owner" of {_block} is not set:
+                send "{@prefix} {@error}This container is not locked or owned by anyone" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            else:
+                set {-addtrust::%{_block}%::%{_p}%} to 30 seconds from now
+                set {-block::%{_p}%} to {_block}
+                close {_p}'s inventory
+                send "{@prefix} {@success}Send the username of the player you wish to trust" to {_p}
+                wait 30 seconds
+                if {-block::%{_p}%} is {_block}:
+                    delete {-block::%{_p}%}
+                if {-addtrust::%{-block::%{_p}%}%::%{_p}%} is set:
+                    delete {-addtrust::%{-block::%{_p}%}%::%{_p}%}
+                    send "{@prefix} {@error}Time to select a username has expired (30s)"
+                
+        make gui slot 3 to {-removetrust}:
+            if data value "scl:owner" of {_block} is not set:
+                send "{@prefix} {@error}This container is not locked or owned by anyone" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            else:
+                set {-removetrust::%{_block}%::%{_p}%} to 30 seconds from now
+                set {-rblock::%{_p}%} to {_block}
+                close {_p}'s inventory
+                send "{@prefix} {@success}Send the username of the player you wish to untrust" to {_p}
+                wait 30 seconds
+                if {-rblock::%{_p}%} is {_block}:
+                    delete {-block::%{_p}%}
+                if {-removetrust::%{-rblock::%{_p}%}%::%{_p}%} is set:
+                    delete {-removetrust::%{-rblock::%{_p}%}%::%{_p}%}
+                    send "{@prefix} {@error}Time to select a username has expired (30s)"
+
+        make gui slot 4 to {-listtrusted}:
+            if data value "scl:owner" of {_block} is not set:
+                send "{@prefix} {@error}This container is not locked or owned by anyone" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            else:
+                if list data value "scl:trusted" of {_block} is set:
+                    send "{@prefix} {@success}The following people are <bold><underline>trusted</underline></bold> on your container:" to {_p}
+                    loop list data value "scl:trusted" of {_block}:
+                        send "{@prefix} {@success} %loop-counter%. <yellow>%loop-value%" to {_p}
+                    close {_p}'s inventory
+                else:
+                    send "{@prefix} {@error}No one is trusted on your container" to {_p}
+                    close {_p}'s inventory
+        
+        make gui slot 5 to {-cleartrusted}:
+            if data value "scl:owner" of {_block} is not set:
+                send "{@prefix} {@error}This container is not locked or owned by anyone" to {_p}
+                close {_p}'s inventory
+                stop
+            if data value "scl:owner" of {_block} is not "%{_player}%":
+                send "{@prefix} {@error}This container is not owned by you" to {_p}
+                close {_p}'s inventory
+                stop
+            else:
+                if list data value "scl:trusted" of {_block} is set:
+                    clear list data value "scl:trusted" of {_block}
+                    send "{@prefix} {@success}Your trusted list has been cleared" to {_p}
+                    close {_p}'s inventory
+                    stop
+                else:
+                    send "{@prefix} {@error}No one is trusted on your container" to {_p}
+                    close {_p}'s inventory
+                    stop
+
+
+    return last gui
+
+on chat:
+    if {-addtrust::%{-block::%player%}%::%player%} is in the future:
+        set {_player} to message
+        set {_player} to {_player} parsed as offlineplayer
+        set {_player} to name of {_player}
+        add {_player} to list data value "scl:trusted" of {-block::%player%}
+        delete {-block::%player%}
+        delete {-addtrust::%{-block::%player%}%::%player%}
+        send "{@prefix} {@success}You have added <yellow>%{_player}%{@success} to your trust list"
+        cancel event
+
+    if {-removetrust::%{-rblock::%player%}%::%player%} is in the future:
+        set {_player} to message
+        set {_player} to {_player} parsed as offlineplayer
+        set {_player} to name of {_player}
+        remove {_player} from list data value "scl:trusted" of {-rblock::%player%}
+        delete {-rblock::%player%}
+        delete {-removetrust::%{-rblock::%player%}%::%player%}
+        send "{@prefix} {@success}You have removed <yellow>%{_player}%{@success} from your trust list"
+        cancel event
+
+on right click:
+    if {-blocks::*} contains event-block:
+        if data value "scl:owner" of event-block is set:
+            if all:
+                data value "scl:owner" of event-block is not "%name of player%"
+                list data value "scl:trusted" of event-block is not "%name of player%"
+                player does not have permission "scl.admin"
+            then:
+                cancel event
+                send "{@prefix} {@error}You do not own this container" to player
+
+on block break:
+    if {-blocks::*} contains event-block:
+        if data value "scl:owner" of event-block is set:
+            if all:
+                data value "scl:owner" of event-block is not "%name of player%"
+                player does not have permission "scl.admin"
+            then:
+                send "{@prefix} {@error}You cannot break this container as you do not own it" to player
+                cancel event
+
+on inventory item move:
+    if {-blocks::*} contains event-block:
+        if data value "scl:owner" of event-block is set:
+            cancel event
+        
+    if {-blocks::*} contains future event-block:
+        if data value "scl:owner" of future event-block is set:
+            cancel event
+
+on explode:
+    loop exploded blocks:
+        if {-blocks::*} contains loop-block:
+            if data value "scl:owner" of loop-block is set:
+                remove loop-block from exploded blocks
+
+command /scl [<string>]:
+    permission: scl.use
+    trigger:
+        if arg-1 is "manage":
+            set {_block} to target block of player
+            set {_player} to name of player
+
+            if {-blocks::*} doesn't contain {_block}:
+                send "{@prefix} {@error}You aren't looking at a compatible container" to player
+                stop
+
+            if data value "scl:owner" of {_block} is not set:
+                open manage(player, {_block}) to player
+
+            if data value "scl:owner" of {_block} is set:
+                if data value "scl:owner" of {_block} is not "%{_player}%":
+                    send "{@prefix} {@error}You don't own this container" to player
+                    stop
+                else:
+                    open manage(player, {_block}) to player
+        if arg-1 is "force_unlock":
+            if player has permission "scl.admin":
+                set {_block} to target block of player
+
+                if data value "scl:owner" of {_block} is not set:
+                    send "{@prefix} {@error}This container is not locked" to player
+                    stop
+                
+                set {_name} to data value "scl:owner" of {_block}
+                clear data value "scl:owner" of {_block}
+                clear list data value "scl:trusted" of {_block}
+                send "{@prefix} {@success}You have forcefully unlocked <yellow>%{_name}%'s {@success}container"
+
+        if arg-1 is "force_list_trusted":
+            if player has permission "scl.admin":
+                set {_block} to target block of player
+
+                if data value "scl:owner" of {_block} is not set:
+                    send "{@prefix} {@error}This container is not locked" to player
+                    stop
+                
+                set {_name} to data value "scl:owner" of {_block}
+                send "{@prefix} {@success}Locked Container Information:"
+                send "{@prefix}"
+                send "{@prefix} {@success} Owner: <yellow>%{_name}%"
+                send ""
+                loop list data value "scl:trusted" of {_block}:
+                    send "{@prefix} {@success} %loop-counter%. <yellow>%loop-value%"
+
+
+
+on tab complete of "/scl":
+    add "manage" to {_tab1::*}
+
+    if player has permission "scl.admin":
+        add "force_unlock" to {_tab1::*}
+        add "force_list_trusted" to {_tab1::*}
+
+    set tab completion for position 1 to {_tab1::*}
