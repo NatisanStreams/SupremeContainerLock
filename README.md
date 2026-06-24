@@ -46,4 +46,4 @@ Players with `scl.admin` bypass all container protection.
 
 ## License
 
-Released under the MIT License. See [LICENSE](LICENSE) for details.
+Released under the [CC0 1.0 Universal](LICENSE) license. To the extent possible under law, all copyright and related rights are waived. You're free to use, modify, distribute and build on this however you like, no attribution required.
